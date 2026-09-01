@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">Firebase Example</string>
+    <string name="login_title">Войдите в аккаунт</string>
+    <string name="email">Email</string>
+    <string name="password">Пароль</string>
+    <string name="login">Войти</string>
+    <string name="register">Зарегистрироваться</string>
+    <string name="signed_in_as">Вы вошли как %1$s</string>
+    <string name="secret_title">Ваша уникальная строка</string>
+    <string name="secret_missing">Для этого пользователя строка ещё не сохранена в Firestore</string>
+    <string name="retry">Повторить</string>
+    <string name="sign_out">Выйти</string>
+</resources>
