@@ -26,6 +26,12 @@ data class MainUiState(
     val isSecretLoading: Boolean = false,
     val secret: String? = null,
     val secretError: String? = null,
+    val isEmailVerified: Boolean? = null,
+    val isSendingVerification: Boolean = false,
+    val verificationMessage: String? = null,
+    val isSendingPasswordReset: Boolean = false,
+    val passwordResetMessage: String? = null,
+    val passwordResetError: String? = null,
 )
 
 class MainViewModel : ViewModel() {
@@ -60,9 +66,11 @@ class MainViewModel : ViewModel() {
                 authState = AuthUiState.SignedIn(user),
                 isAuthenticating = false,
                 loginError = null,
+                isEmailVerified = user.isEmailVerified(),
             )
         }
         loadSecret(user.uid)
+        refreshEmailVerification()
     }
 
     fun loginWithEmail(email: String, password: String) {
@@ -82,7 +90,19 @@ class MainViewModel : ViewModel() {
         _state.update { it.copy(isAuthenticating = true, loginError = null) }
         viewModelScope.launch {
             try {
-                authRepository.registerWithEmail(email, password)
+                val user = authRepository.registerWithEmail(email, password)
+                try {
+                    authRepository.sendEmailVerification()
+                } catch (_: Exception) {
+                    // Письмо о подтверждении не критично для создания аккаунта
+                }
+                _state.update {
+                    it.copy(
+                        isAuthenticating = false,
+                        loginError = null,
+                        isEmailVerified = user.isEmailVerified(),
+                    )
+                }
             } catch (error: Exception) {
                 _state.update {
                     it.copy(isAuthenticating = false, loginError = friendlyMessage(error))
@@ -95,9 +115,85 @@ class MainViewModel : ViewModel() {
         authRepository.signOut()
     }
 
+    fun sendPasswordReset(email: String) {
+        _state.update {
+            it.copy(
+                isSendingPasswordReset = true,
+                passwordResetMessage = null,
+                passwordResetError = null,
+            )
+        }
+        viewModelScope.launch {
+            try {
+                authRepository.sendPasswordResetEmail(email)
+                _state.update {
+                    it.copy(
+                        isSendingPasswordReset = false,
+                        passwordResetMessage = "Письмо для сброса пароля отправлено на $email",
+                    )
+                }
+            } catch (error: Exception) {
+                _state.update {
+                    it.copy(
+                        isSendingPasswordReset = false,
+                        passwordResetError = friendlyMessage(error),
+                    )
+                }
+            }
+        }
+    }
+
+    fun resendEmailVerification() {
+        val email = (state.value.authState as? AuthUiState.SignedIn)?.user?.email
+        _state.update {
+            it.copy(isSendingVerification = true, verificationMessage = null)
+        }
+        viewModelScope.launch {
+            try {
+                authRepository.sendEmailVerification()
+                val target = email ?: ""
+                _state.update {
+                    it.copy(
+                        isSendingVerification = false,
+                        verificationMessage =
+                            if (target.isBlank())
+                                "Письмо для подтверждения email отправлено"
+                            else
+                                "Письмо для подтверждения email отправлено на $target",
+                    )
+                }
+            } catch (error: Exception) {
+                _state.update {
+                    it.copy(
+                        isSendingVerification = false,
+                        verificationMessage = friendlyMessage(error),
+                    )
+                }
+            }
+        }
+    }
+
     fun retryLoadSecret() {
         (state.value.authState as? AuthUiState.SignedIn)
             ?.let { loadSecret(it.user.uid) }
+    }
+
+    private fun refreshEmailVerification() {
+        viewModelScope.launch {
+            try {
+                val reloaded = authRepository.reloadCurrentUser()
+                if (reloaded != null) {
+                    _state.update {
+                        it.copy(
+                            authState = AuthUiState.SignedIn(reloaded),
+                            isEmailVerified = reloaded.isEmailVerified(),
+                        )
+                    }
+                }
+            } catch (_: Exception) {
+                // Ничего: используем уже известное состояние
+            }
+        }
     }
 
     private fun loadSecret(uid: String) {
@@ -141,9 +237,9 @@ class MainViewModel : ViewModel() {
             "auth/weak-password" -> "Пароль слишком слабый, минимум 6 символов"
             "auth/too-many-requests" -> "Слишком много попыток, попробуйте позже"
             "auth/network-request-failed" -> "Ошибка сети, проверьте подключение"
-            else -> error.message ?: "Не удалось войти"
+            else -> error.message ?: "Произошла ошибка, попробуйте позже"
         }
 
-        else -> error.message ?: "Не удалось войти"
+        else -> error.message ?: "Произошла ошибка, попробуйте позже"
     }
 }

@@ -31,4 +31,19 @@ class AuthRepository(
     fun signOut() {
         firebaseAuth.signOut()
     }
+
+    suspend fun sendEmailVerification() {
+        val user = requireNotNull(firebaseAuth.currentUser) { "Нет текущего пользователя" }
+        user.sendEmailVerification().await()
+    }
+
+    suspend fun sendPasswordResetEmail(email: String) {
+        firebaseAuth.sendPasswordResetEmail(email).await()
+    }
+
+    suspend fun reloadCurrentUser(): FirebaseUser? {
+        val user = firebaseAuth.currentUser ?: return null
+        user.reload().await()
+        return user
+    }
 }

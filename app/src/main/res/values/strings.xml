@@ -10,4 +10,9 @@
     <string name="secret_missing">Для этого пользователя строка ещё не сохранена в Firestore</string>
     <string name="retry">Повторить</string>
     <string name="sign_out">Выйти</string>
+    <string name="forgot_password">Забыли пароль?</string>
+    <string name="email_not_verified">Email не подтверждён</string>
+    <string name="email_not_verified_hint">Подтвердите email, чтобы активировать аккаунт</string>
+    <string name="resend_verification">Отправить письмо для подтверждения</string>
+    <string name="email_verified">Email подтверждён</string>
 </resources>

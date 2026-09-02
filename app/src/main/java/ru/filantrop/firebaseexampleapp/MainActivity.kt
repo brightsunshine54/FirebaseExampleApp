@@ -59,6 +59,7 @@ class MainActivity : ComponentActivity() {
                                 state = state,
                                 onEmailLogin = viewModel::loginWithEmail,
                                 onEmailRegister = viewModel::registerWithEmail,
+                                onForgotPassword = viewModel::sendPasswordReset,
                                 modifier = Modifier.fillMaxSize(),
                             )
 
@@ -66,6 +67,7 @@ class MainActivity : ComponentActivity() {
                                 state = state,
                                 onSignOut = viewModel::signOut,
                                 onRetrySecret = viewModel::retryLoadSecret,
+                                onResendVerification = viewModel::resendEmailVerification,
                                 modifier = Modifier.fillMaxSize(),
                             )
                         }

@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,11 +35,13 @@ fun LoginScreen(
     state: MainUiState,
     onEmailLogin: (String, String) -> Unit,
     onEmailRegister: (String, String) -> Unit,
+    onForgotPassword: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     val fieldsEnabled = !state.isAuthenticating
+    val forgotEnabled = !state.isAuthenticating && !state.isSendingPasswordReset
 
     Column(
         modifier = modifier
@@ -81,17 +84,33 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        if (state.loginError != null) {
+        val resetFeedback = state.passwordResetMessage ?: state.passwordResetError
+        val loginFeedback = state.loginError
+        if (loginFeedback != null || resetFeedback != null) {
             Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = state.loginError!!,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            if (loginFeedback != null) {
+                Text(
+                    text = loginFeedback,
+                    color = MaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            if (resetFeedback != null) {
+                Text(
+                    text = resetFeedback,
+                    color = if (state.passwordResetMessage != null) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.error
+                    },
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
 
-        if (state.isAuthenticating) {
+        if (state.isAuthenticating || state.isSendingPasswordReset) {
             Spacer(modifier = Modifier.height(24.dp))
             CircularProgressIndicator(modifier = Modifier.padding(8.dp))
         }
@@ -111,6 +130,13 @@ fun LoginScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text(stringResource(R.string.register))
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        TextButton(
+            onClick = { onForgotPassword(email) },
+            enabled = email.isNotBlank() && forgotEnabled,
+        ) {
+            Text(stringResource(R.string.forgot_password))
         }
     }
 }

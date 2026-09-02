@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import ru.filantrop.firebaseexampleapp.R
 
@@ -28,6 +29,7 @@ fun HomeScreen(
     state: MainUiState,
     onSignOut: () -> Unit,
     onRetrySecret: () -> Unit,
+    onResendVerification: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val user = (state.authState as? AuthUiState.SignedIn)?.user
@@ -44,6 +46,12 @@ fun HomeScreen(
         Text(
             text = stringResource(R.string.signed_in_as, identity),
             style = MaterialTheme.typography.headlineSmall,
+        )
+        Spacer(modifier = Modifier.height(32.dp))
+
+        EmailVerificationCard(
+            state = state,
+            onResendVerification = onResendVerification,
         )
         Spacer(modifier = Modifier.height(32.dp))
 
@@ -91,6 +99,70 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(32.dp))
         Button(onClick = onSignOut) {
             Text(stringResource(R.string.sign_out))
+        }
+    }
+}
+
+@Composable
+private fun EmailVerificationCard(
+    state: MainUiState,
+    onResendVerification: () -> Unit,
+) {
+    val isVerified = state.isEmailVerified ?: return
+    val email = (state.authState as? AuthUiState.SignedIn)?.user?.email
+
+    ElevatedCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            if (isVerified) {
+                Text(
+                    text = stringResource(R.string.email_verified),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                email?.takeIf { it.isNotBlank() }?.let {
+                    Text(
+                        text = it,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                Text(
+                    text = stringResource(R.string.email_not_verified),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.email_not_verified_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                if (state.isSendingVerification) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    CircularProgressIndicator(modifier = Modifier.padding(8.dp))
+                } else {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = onResendVerification) {
+                        Text(stringResource(R.string.resend_verification))
+                    }
+                }
+                state.verificationMessage?.let { message ->
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
         }
     }
 }
